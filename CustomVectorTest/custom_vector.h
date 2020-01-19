@@ -83,6 +83,7 @@ CustomVector<T>& CustomVector<T>::operator=(const CustomVector<T>& customVector)
 {
 	if (customVector.capacity) {
 		for (int i = 0; i < count; items[i++].~T());
+		count = 0;
 		T* newItems = static_cast<T*>(realloc(items, sizeof(T) * customVector.capacity));
 		if (newItems == nullptr) throw new std::bad_alloc();
 		items = newItems;
@@ -200,7 +201,7 @@ void CustomVector<T>::Resize(const int elementsCount)
 	if (elementsCount < count) {
 		for (int i = elementsCount; i < count; i++) items[i].~T();
 		count = elementsCount;
-		if ((count < capacity / 2) && (capacity > DEFAULT_CAPACITY)) DecreaseCapacity();
+		if ((elementsCount < capacity / 2) && (capacity > DEFAULT_CAPACITY)) DecreaseCapacity();
 	}
 }
 
@@ -221,7 +222,6 @@ void CustomVector<T>::DecreaseCapacity(int newCapacity)
 {
 	if (newCapacity == -1)
 		newCapacity = ((capacity >> 1) <= DEFAULT_CAPACITY) ? DEFAULT_CAPACITY : (capacity >> 1);
-	for (int i = 0; i < capacity - newCapacity; items[newCapacity + i++].~T());
 	capacity = newCapacity;
 
 	T* newItems = static_cast<T*>(realloc(items, sizeof(T) * newCapacity));
