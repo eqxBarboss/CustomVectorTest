@@ -33,8 +33,9 @@ private:
 	int count;
 	int capacity;
 
-	void IncreaseCapacity(int newCapacity = -1);
-	void DecreaseCapacity(int newCapacity = -1);
+	void ChangeCapacity(int newCapacity);
+	void DoubleCapacity();
+	void HalveCapacity();
 };
 
 template <class T>
@@ -147,7 +148,7 @@ void CustomVector<T>::Clear()
 template <class T>
 void CustomVector<T>::PushBack(const T& element)
 {
-	if (count == capacity) IncreaseCapacity();
+	if (count == capacity) DoubleCapacity();
 	new (items + count) T(element);
 	count++;
 }
@@ -166,7 +167,7 @@ void CustomVector<T>::Insert(const int index, const T& item)
 
 	if ((count == 0) || (index > count - 1) || (index < 0)) throw new std::invalid_argument("Received invalid index.");
 
-	if (count == capacity) IncreaseCapacity();
+	if (count == capacity) DoubleCapacity();
 
 	memmove(items + index + 1, items + index, (count - index) * sizeof(T));
 	new (items + index) T(item);
@@ -182,7 +183,7 @@ void CustomVector<T>::Erase(const int index)
 	memmove(items + index, items + index + 1, (count - (index + 1)) * sizeof(T));
 	count--;
 
-	if ((count < capacity / 2) && (capacity > DEFAULT_CAPACITY)) DecreaseCapacity();
+	if ((count < capacity / 2) && (capacity > DEFAULT_CAPACITY)) HalveCapacity();
 }
 
 template <class T>
@@ -193,7 +194,7 @@ void CustomVector<T>::Resize(const int elementsCount)
 	if (elementsCount == count) return;
 
 	if (elementsCount > count) {
-		if (elementsCount > capacity) IncreaseCapacity(elementsCount);
+		if (elementsCount > capacity) ChangeCapacity(elementsCount);
 		for (int i = count; i < elementsCount; i++) new (items + i) T();
 		count = elementsCount;
 	}
@@ -201,15 +202,13 @@ void CustomVector<T>::Resize(const int elementsCount)
 	if (elementsCount < count) {
 		for (int i = elementsCount; i < count; i++) items[i].~T();
 		count = elementsCount;
-		if ((elementsCount < capacity / 2) && (capacity > DEFAULT_CAPACITY)) DecreaseCapacity();
+		if ((elementsCount < capacity / 2) && (capacity > DEFAULT_CAPACITY)) HalveCapacity();
 	}
 }
 
 template <class T>
-void CustomVector<T>::IncreaseCapacity(int newCapacity)
+void CustomVector<T>::ChangeCapacity(int newCapacity)
 {
-	if (newCapacity == -1)
-		newCapacity = ((capacity << 1) <= DEFAULT_CAPACITY) ? DEFAULT_CAPACITY : (capacity << 1);
 	T* newItems = static_cast<T*>(realloc(items, sizeof(T) * newCapacity));
 	if (newItems == nullptr) throw new std::bad_alloc();
 
@@ -218,13 +217,15 @@ void CustomVector<T>::IncreaseCapacity(int newCapacity)
 }
 
 template <class T>
-void CustomVector<T>::DecreaseCapacity(int newCapacity)
+void CustomVector<T>::DoubleCapacity()
 {
-	if (newCapacity == -1)
-		newCapacity = ((capacity >> 1) <= DEFAULT_CAPACITY) ? DEFAULT_CAPACITY : (capacity >> 1);
-	capacity = newCapacity;
+	int newCapacity = ((capacity << 1) <= DEFAULT_CAPACITY) ? DEFAULT_CAPACITY : (capacity << 1);
+	ChangeCapacity(newCapacity);
+}
 
-	T* newItems = static_cast<T*>(realloc(items, sizeof(T) * newCapacity));
-	if (newItems == nullptr) throw new std::bad_alloc();
-	items = newItems;
+template <class T>
+void CustomVector<T>::HalveCapacity()
+{
+	int	newCapacity = ((capacity >> 1) <= DEFAULT_CAPACITY) ? DEFAULT_CAPACITY : (capacity >> 1);
+	ChangeCapacity(newCapacity);
 }
