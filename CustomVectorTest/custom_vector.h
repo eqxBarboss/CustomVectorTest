@@ -217,7 +217,7 @@ void CustomVector<T>::Insert(const int index, const T& item)
 template <class T>
 void CustomVector<T>::Insert(const int index, T&& item)
 {
-	if (count == index) return PushBack(item);
+	if (count == index) return PushBack(std::move(item));
 
 	if ((count == 0) || (index > count - 1) || (index < 0)) throw new std::invalid_argument("Received invalid index.");
 
@@ -256,7 +256,7 @@ void CustomVector<T>::Resize(const int elementsCount)
 	if (elementsCount < count) {
 		for (int i = elementsCount; i < count; i++) items[i].~T();
 		count = elementsCount;
-		if ((elementsCount < capacity / 2) && (capacity > DEFAULT_CAPACITY)) HalveCapacity();
+		if ((count < capacity / 2) && (capacity > DEFAULT_CAPACITY)) HalveCapacity();
 	}
 }
 
