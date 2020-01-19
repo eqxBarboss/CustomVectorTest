@@ -69,7 +69,7 @@ CustomVector<T>::CustomVector(int elementsCount)
 
 	items = static_cast<T*>(malloc(sizeof(T) * capacity));
 	if (items == nullptr) throw new std::bad_alloc();
-	for (int i = 0; i < capacity; new (items + i++) T());
+	for (int i = 0; i < count; new (items + i++) T());
 }
 
 template <class T>
@@ -82,7 +82,7 @@ template <class T>
 CustomVector<T>& CustomVector<T>::operator=(const CustomVector<T>& customVector)
 {
 	if (customVector.capacity) {
-		for (int i = 0; i < capacity; items[i++].~T());
+		for (int i = 0; i < count; items[i++].~T());
 		T* newItems = static_cast<T*>(realloc(items, sizeof(T) * customVector.capacity));
 		if (newItems == nullptr) throw new std::bad_alloc();
 		items = newItems;
@@ -136,7 +136,7 @@ int CustomVector<T>::Capacity() const
 template <class T>
 void CustomVector<T>::Clear()
 {
-	for (int i = 0; i < capacity; items[i++].~T());
+	for (int i = 0; i < count; items[i++].~T());
 	free(items);
 	items = nullptr;
 	count = 0;
@@ -147,7 +147,8 @@ template <class T>
 void CustomVector<T>::PushBack(const T& element)
 {
 	if (count == capacity) IncreaseCapacity();
-	items[count++] = element;
+	new (items + count) T(element);
+	count++;
 }
 
 template <class T>
@@ -167,8 +168,7 @@ void CustomVector<T>::Insert(const int index, const T& item)
 	if (count == capacity) IncreaseCapacity();
 
 	memmove(items + index + 1, items + index, (count - index) * sizeof(T));
-	new (items + index) T();
-	items[index] = item;
+	new (items + index) T(item);
 	count++;
 }
 
@@ -193,14 +193,12 @@ void CustomVector<T>::Resize(const int elementsCount)
 
 	if (elementsCount > count) {
 		if (elementsCount > capacity) IncreaseCapacity(elementsCount);
+		for (int i = count; i < elementsCount; i++) new (items + i) T();
 		count = elementsCount;
 	}
 
 	if (elementsCount < count) {
-		for (int i = elementsCount; i < count; i++) {
-			items[i].~T();
-			new (items + i) T();
-		}
+		for (int i = elementsCount; i < count; i++) items[i].~T();
 		count = elementsCount;
 		if ((count < capacity / 2) && (capacity > DEFAULT_CAPACITY)) DecreaseCapacity();
 	}
@@ -214,7 +212,6 @@ void CustomVector<T>::IncreaseCapacity(int newCapacity)
 	T* newItems = static_cast<T*>(realloc(items, sizeof(T) * newCapacity));
 	if (newItems == nullptr) throw new std::bad_alloc();
 
-	for (int i = 0; i < newCapacity - capacity; new (newItems + capacity + i++) T());
 	items = newItems;
 	capacity = newCapacity;
 }
