@@ -9,10 +9,12 @@ class CustomVector
 public:
 	CustomVector();
 	CustomVector(const CustomVector<T>& customVector);
+	CustomVector(CustomVector<T>&& customVector);
 	CustomVector(int elementsCount);
 	~CustomVector();
 
 	CustomVector<T>& operator=(const CustomVector<T>& customVector);
+	CustomVector<T>& operator=(CustomVector<T>&& customVector);
 	const T& operator[] (const int index) const;
 	T& operator[] (const int index);
 	const T* Data() const;
@@ -22,9 +24,11 @@ public:
 	int Capacity() const;
 
 	void Clear();
-	void PushBack(const T& element);
+	void PushBack(const T& item);
+	void PushBack(T&& item);
 	void PopBack();
 	void Insert(const int index, const T& element);
+	void Insert(const int index, T&& element);
 	void Erase(const int index);
 	void Resize(const int elementsCount);
 
@@ -61,6 +65,17 @@ CustomVector<T>::CustomVector(const CustomVector<T>& customVector)
 }
 
 template <class T>
+CustomVector<T>::CustomVector(CustomVector<T>&& customVector)
+	: items(customVector.items),
+	count(customVector.count),
+	capacity(customVector.capacity)
+{
+	customVector.items = nullptr;
+	customVector.count = 0;
+	customVector.capacity = 0;
+}
+
+template <class T>
 CustomVector<T>::CustomVector(int elementsCount)
 	: items(nullptr),
 	count(elementsCount),
@@ -82,19 +97,37 @@ CustomVector<T>::~CustomVector()
 template <class T>
 CustomVector<T>& CustomVector<T>::operator=(const CustomVector<T>& customVector)
 {
-	if (customVector.capacity) {
-		for (int i = 0; i < count; items[i++].~T());
-		count = 0;
-		T* newItems = static_cast<T*>(realloc(items, sizeof(T) * customVector.capacity));
-		if (newItems == nullptr) throw new std::bad_alloc();
-		items = newItems;
+	if (this != &customVector) {
+		if (customVector.capacity) {
+			for (int i = 0; i < count; items[i++].~T());
+			count = 0;
+			T* newItems = static_cast<T*>(realloc(items, sizeof(T) * customVector.capacity));
+			if (newItems == nullptr) throw new std::bad_alloc();
+			items = newItems;
+			count = customVector.count;
+			capacity = customVector.capacity;
+			memcpy(items, customVector.items, sizeof(T) * capacity);
+		}
+		else {
+			Clear();
+		}
+	}
+	return *this;
+}
+
+template <class T>
+CustomVector<T>& CustomVector<T>::operator=(CustomVector<T>&& customVector)
+{
+	if (this != &customVector) {
+		Clear();
+		items = customVector.items;
 		count = customVector.count;
 		capacity = customVector.capacity;
-		memcpy(items, customVector.items, sizeof(T) * capacity);
+		customVector.items = nullptr;
+		customVector.count = 0;
+		customVector.capacity = 0;
 	}
-	else {
-		Clear();
-	}
+	return *this;
 }
 
 template <class T>
@@ -146,10 +179,18 @@ void CustomVector<T>::Clear()
 }
 
 template <class T>
-void CustomVector<T>::PushBack(const T& element)
+void CustomVector<T>::PushBack(const T& item)
 {
 	if (count == capacity) DoubleCapacity();
-	new (items + count) T(element);
+	new (items + count) T(item);
+	count++;
+}
+
+template <class T>
+void CustomVector<T>::PushBack(T&& item)
+{
+	if (count == capacity) DoubleCapacity();
+	new (items + count) T(std::move(item));
 	count++;
 }
 
@@ -159,7 +200,6 @@ void CustomVector<T>::PopBack()
 	Erase(count - 1);
 }
 
-// Index must be in [0; count].
 template <class T>
 void CustomVector<T>::Insert(const int index, const T& item)
 {
@@ -171,6 +211,20 @@ void CustomVector<T>::Insert(const int index, const T& item)
 
 	memmove(items + index + 1, items + index, (count - index) * sizeof(T));
 	new (items + index) T(item);
+	count++;
+}
+
+template <class T>
+void CustomVector<T>::Insert(const int index, T&& item)
+{
+	if (count == index) return PushBack(item);
+
+	if ((count == 0) || (index > count - 1) || (index < 0)) throw new std::invalid_argument("Received invalid index.");
+
+	if (count == capacity) DoubleCapacity();
+
+	memmove(items + index + 1, items + index, (count - index) * sizeof(T));
+	new (items + index) T(std::move(item));
 	count++;
 }
 
